@@ -150,7 +150,7 @@ canvas.addEventListener("mousedown", btnClick, true);
 canvas.addEventListener("keydown", fixedUpdate, true);
 canvas.addEventListener("keyup", stopmoving, true)
 
-ctx.shadowBlur = 0;
+ctx.shadowBlur = 100;
 
 // Track the position of mouse cursor
 function trackPosition(e) {
@@ -204,7 +204,7 @@ function Wall(x, y, w, h) {
 		ctx.beginPath();
 		ctx.fillStyle = "white";
 		ctx.fillRect(this.x, this.y, this.w, this.h);
-		ctx.shadowBlur = 0;
+		ctx.shadowBlur = 100;
 	}
 
 };
@@ -255,28 +255,28 @@ function start() {
 function isClear(where) {
 	if (where === 'up') {
 		for (var i = 0; i < maze.length; i++) {
-			if ((  (H/2 - maze[i].y - maze[i].h ) <= speed * 1.5)   && (maze[i].y < H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
+			if ((  (H/2 - 5 * scale/12 - maze[i].y ) <= speed * 1.5)   && (maze[i].y < H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'down') {
 		for (var i = 0; i < maze.length; i++) {
-			if ((  (maze[i].y - H/2) <= speed * 1.5)   && (maze[i].y > H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
+			if ((  (maze[i].y + 0.2 * scale - H/2 - scale/2) <= speed * 1.5)   && (maze[i].y > H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'left') {
 		for (var i = 0; i < maze.length; i++) {
-			if (((W/2 - maze[i].x) <= speed * 1.5 ) && (maze[i].x < W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
+			if (((W/2 - scale * 0.2 - maze[i].x) <= speed * 1.5 ) && (maze[i].x < W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'right') {
 		for (var i = 0; i < maze.length; i++) {
-			if (((maze[i].x - W/2) <= speed * 1.5 ) && (maze[i].x > W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
+			if (((maze[i].x - W/2 - scale/10)  <= speed * 1.5 ) && (maze[i].x > W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
 				return 0;
 			}
 		}
@@ -390,7 +390,7 @@ function animloop() {
 }
 
 function startScreen() {
-	mazeGenerator(20, 20);
+	mazeGenerator(50, 50);
 	for(i = 0 ; i < matrix.length ; i++){
 		for(j = 0 ; j < matrix.length; j++)
 		{
