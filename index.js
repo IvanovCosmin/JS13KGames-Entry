@@ -1,5 +1,7 @@
 var FPS = 60;
-
+var imgURL = ['img/fata.png' ,'img/mersulpinguinilor.png','img/spate.png', 'img/reversed-min.png'];
+var images = [];
+var imgNr = imgURL.length;
 // Initialize some stuff
 var canvas = document.querySelector('#game'),
 	ctx = canvas.getContext('2d'),
@@ -12,6 +14,12 @@ var canvas = document.querySelector('#game'),
 	mouse = {},
 	startBtn = {}, up, down, left, right,
 	restartBtn = {};
+
+
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+ctx.msImageSmoothingEnabled = false;
+ctx.imageSmoothingEnabled = false;
 
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -49,24 +57,27 @@ function convertForTan(x) {
 //here we store the tears of the lead developer
 //and the walls
 var maze = [];
-maze.push(new Wall(0, 0, 1000, 10));
-maze.push(new Wall(1000, 0, 10, 1000));
+/*maze.push(new Wall(0, 0, 1000, 10));
+maze.push(new Wall(990, 0, 10, 1000));
 maze.push(new Wall(0, 0, 10, 1000));
-maze.push(new Wall(0, 1000, 1000, 10));
-
+maze.push(new Wall(0, 990, 1000, 10));
+*/
 
 // generates a maze with width , height and number of doors in each wall (except the outer ones)
 var matrix = [];
-var scale = 20;
+var scale = 120;
 
 function makeWall(x1, y1, x2, y2) {
-	ctx.beginPath();
-	ctx.lineWidth = "5";
-	ctx.strokeStyle = "white";
-	ctx.moveTo(x1 + 100, y1 + 100);
-	ctx.lineTo(x2 + 100, y2 + 100);
-	ctx.stroke();
-	console.log("something works");
+	//WHACHAAAUT
+	//maze.push(new Wall((x1===x2) * x1 , (y2 === y1) * y1 , scale * Math.abs((x1 - x2) || (y1 - y2)) , FUCKME ));
+	//I will keep that line to see the reason I cry
+	if(x1 === x2)
+	{
+		maze.push(new Wall(x1 , Math.min(y2,y1) , 10 , Math.abs(y2 - y1) ));
+	}
+	else if(y2 === y1){
+		maze.push(new Wall(Math.min(x1,x2) , y1 , Math.abs(x1 - x2) , 10));
+	}
 }
 
 function generator(x, y) {
@@ -150,8 +161,8 @@ function trackPosition(e) {
 
 //TODO
 function Creature(type, c1, ec, sc) {
-	this.x = W / 2;
-	this.y = H / 2;
+	this.x = W / 2 - scale/2;
+	this.y = H / 2 - scale/2;
 	this.fx = getRandomInt(0, 400);
 	this.fy = getRandomInt(0, 400);
 	this.r = 0;
@@ -163,35 +174,22 @@ function Creature(type, c1, ec, sc) {
 	this.w = (this.type === "player" ? 40 : 20);
 	this.h = 1.1 * this.w;
 	this.draw = function () {
-		ctx.beginPath();
-		ctx.shadowBlur = 150;
-		ctx.shadowColor = (this.type === "player" ? this.sc : this.c1);
-		if (this.r) {
-			//eyes
-			ctx.fillStyle = this.ec;
-			ctx.fillRect(this.x + this.w / 3 - this.ro * this.w * 2 / 15, this.y - this.h * 6 / 10, this.h / 7, this.w / 5);
-			ctx.fillRect(this.x + this.w * 2 / 3 - this.ro * this.w * 2 / 15, this.y - this.h * 6 / 10, this.h / 7, this.w / 5);
+		if(this.r === 0)
+		{
+			ctx.drawImage(images[0],this.x,this.y , scale, scale);
 		}
-		ctx.fillStyle = this.c1;
-		//body
-		ctx.fillRect(this.x, this.y, this.w, this.h);
-		//head
-		ctx.fillRect(this.x + this.w / 4, this.y - this.h / 2, this.h / 2, this.w / 2);
-		//legs
-		ctx.fillRect(this.x + this.w / 8, this.y + this.h * 1.1, this.w / 4, this.h * 1.1 / 4);
-		ctx.fillRect(this.x + this.w * 5 / 8, this.y + this.h * 1.1, this.w / 4, this.h * 1.1 / 4);
-		//hands
-		ctx.fillRect(this.x - this.w / 4, this.y, this.w / 4, this.h * 5 / 6);
-		ctx.fillRect(this.x + this.w, this.y, this.w / 4, this.h * 5 / 6);
-		if (!this.r) {
-			//eyes
-			ctx.fillStyle = this.ec;
-			ctx.fillRect(this.x + this.w / 3 - this.ro * this.w * 2 / 15, this.y - this.h * 6 / 10, this.h / 7, this.w / 5);
-			ctx.fillRect(this.x + this.w * 2 / 3 - this.ro * this.w * 2 / 15, this.y - this.h * 6 / 10, this.h / 7, this.w / 5);
+		else if(this.r === 1)
+		{
+			ctx.drawImage(images[2], this.x , this.y , scale, scale);
 		}
-
-
-
+		else if(this.r === 3)
+		{
+			ctx.drawImage(images[1] , this.x , this.y , scale, scale);
+		}
+		else if(this.r === 2)
+		{
+			ctx.drawImage(images[3] , this.x , this.y, scale, scale);
+		}
 	}
 };
 
@@ -211,7 +209,6 @@ function Wall(x, y, w, h) {
 
 };
 
-var wall = new Wall(100, 100, 100, 10);
 
 
 var player = new Creature();
@@ -258,30 +255,28 @@ function start() {
 function isClear(where) {
 	if (where === 'up') {
 		for (var i = 0; i < maze.length; i++) {
-			if (maze[i].y === H / 2 && maze[i].x <= W / 2 && maze[i].x + maze[i].w >= W / 2) {
+			if ((  (H/2 - maze[i].y - maze[i].h ) <= speed * 1.5)   && (maze[i].y < H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'down') {
 		for (var i = 0; i < maze.length; i++) {
-			if (maze[i].y === H / 2 && maze[i].x <= W / 2 && maze[i].x + maze[i].w >= W / 2) {
+			if ((  (maze[i].y - H/2) <= speed * 1.5)   && (maze[i].y > H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'left') {
 		for (var i = 0; i < maze.length; i++) {
-			if (maze[i].x === W / 2 && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
-				console.log(maze[i].x + maze[i].h);
+			if (((W/2 - maze[i].x) <= speed * 1.5 ) && (maze[i].x < W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'right') {
 		for (var i = 0; i < maze.length; i++) {
-			if (maze[i].x === W / 2 && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
-				console.log(maze[i].x + maze[i].h);
+			if (((maze[i].x - W/2) <= speed * 1.5 ) && (maze[i].x > W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
 				return 0;
 			}
 		}
@@ -296,25 +291,33 @@ function fixedUpdate(e) {
 		up = setInterval(function () {
 			CT -= speed * isClear('up');
 		}, 1000 / FPS);
+		clearInterval(down);
+		down = 0;
 		player.r = 1;
 	}
 	else if (code == 83 && !down) {
 		down = setInterval(function () {
 			CT += speed * isClear('down');
 		}, 1000 / FPS);
+		clearInterval(up);
+		up = 0;
 		player.r = 0;
 	}
 	else if (code == 65 && !left) {
 		left = setInterval(function () {
 			CL -= speed * isClear('left');
 		}, 1000 / FPS);
-		player.ro = 1;
+		clearInterval(right);
+		right = 0;
+		player.r = 2;
 	}
 	else if (code == 68 && !right) {
 		right = setInterval(function () {
 			CL += speed * isClear('right');
 		}, 1000 / FPS);
-		player.ro = 0;
+		clearInterval(left);
+		left = 0;
+		player.r = 3;
 	}
 }
 
@@ -373,18 +376,6 @@ function draw() {
 	for (var i = 0; i < maze.length; i++) {
 		maze[i].draw();
 	}
-	
-	/*mazeGenerator(20, 20);
-	for(i = 0 ; i < matrix.length ; i++){
-		for(j = 0 ; j < matrix.length; j++)
-		{
-			if(matrix[i][j] === 0)
-			{
-				generator(i,j);
-			}
-		}
-	}
-	*/
 
 }
 
@@ -399,8 +390,18 @@ function animloop() {
 }
 
 function startScreen() {
+	mazeGenerator(20, 20);
+	for(i = 0 ; i < matrix.length ; i++){
+		for(j = 0 ; j < matrix.length; j++)
+		{
+			if(matrix[i][j] === 0)
+			{
+				generator(i,j);
+			}
+		}
+	}
 	draw();
-	//startBtn.draw();
+	startBtn.draw();
 }
 
 // On button click (Restart and start)
@@ -422,6 +423,27 @@ function btnClick(e) {
 
 }
 
+for(var i = 0; i < imgURL.length; i++) {
 
-startScreen();
+    /// create a new image element
+    var img = new Image();
+
+    /// element is valid so we can push that to stack
+    images.push(img);
+
+    /// set handler and url
+    img.onload = onloadHandler;
+    img.src = imgURL[i];
+
+    /// if image is cached IE (surprise!) may not trigger onload
+    if (img.complete) onloadHandler().bind(img);
+}
+
+
+function onloadHandler() {
+    /// optionally: "this" contains current image just loaded
+    imgNr--;
+    if (imgNr === 0) startScreen();
+}
+
 
