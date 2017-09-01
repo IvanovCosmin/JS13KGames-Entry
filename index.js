@@ -1,6 +1,7 @@
 var FPS = 60;
 var imgURL = ['img/fata.png' ,'img/mersulpinguinilor.png','img/spate.png', 'img/reversed-min.png'];
 var images = [];
+var dict = ['fear' , 'happiness' , 'shame' , 'remorseless', 'anguish' , 'delight' , 'sadness' , 'cheer' , 'heartache' , 'contentment' ,'suffering' , 'comfort' , 'collapse' , 'wonder'];
 var imgNr = imgURL.length;
 // Initialize some stuff
 var canvas = document.querySelector('#game'),
@@ -9,7 +10,7 @@ var canvas = document.querySelector('#game'),
 	H = canvas.height,
 	CL = 0, //camera left and camera top , used for camera following the player , yeah im dumb
 	CT = 0,
-	speed = 300 / FPS,
+	speed = 350 / FPS,
 	init,
 	mouse = {},
 	startBtn = {}, up, down, left, right,
@@ -27,6 +28,11 @@ function getRandomInt(min, max) {
 
 function isInArray(value, array) {
 	return array.indexOf(value) > -1;
+}
+
+function circleCoords(x){
+	var random = getRandomInt(0 , 2 * Math.PI);
+	return [x * 3 * Math.cos(random) + W/2 + getRandomInt(-100 , 10) , x * 4 *  Math.sin(random) + H/2 + getRandomInt(-100 , 10) ];
 }
 
 function shuffle(array) {
@@ -76,7 +82,7 @@ function makeWall(x1, y1, x2, y2) {
 		maze.push(new Wall(x1 , Math.min(y2,y1) , 10 , Math.abs(y2 - y1) ));
 	}
 	else if(y2 === y1){
-		maze.push(new Wall(Math.min(x1,x2) , y1 , Math.abs(x1 - x2) , 10));
+		maze.push(new Wall(Math.min(x1,x2) , y1 + 10 , Math.abs(x1 - x2) , 10));
 	}
 }
 
@@ -150,7 +156,6 @@ canvas.addEventListener("mousedown", btnClick, true);
 canvas.addEventListener("keydown", fixedUpdate, true);
 canvas.addEventListener("keyup", stopmoving, true)
 
-ctx.shadowBlur = 100;
 
 // Track the position of mouse cursor
 function trackPosition(e) {
@@ -174,6 +179,7 @@ function Creature(type, c1, ec, sc) {
 	this.w = (this.type === "player" ? 40 : 20);
 	this.h = 1.1 * this.w;
 	this.draw = function () {
+		ctx.shadowBlur = 100;
 		if(this.r === 0)
 		{
 			ctx.drawImage(images[0],this.x,this.y , scale, scale);
@@ -201,6 +207,7 @@ function Wall(x, y, w, h) {
 	this.w = w;
 	this.h = h;
 	this.draw = function () {
+		ctx.shadowBlur = 0;
 		ctx.beginPath();
 		ctx.fillStyle = "white";
 		ctx.fillRect(this.x, this.y, this.w, this.h);
@@ -209,15 +216,31 @@ function Wall(x, y, w, h) {
 
 };
 
+//0 <= c <= 255 , 0 <= alpha <= 1
+function Word(x , y, c , alpha){
+	this.x = x;
+	this.y = y;
+	this.c = c;
+	this.alpha = alpha;
+	this.size = getRandomInt(15 , 30);
+	this.draw = function(){
+		ctx.beginPath();
+		ctx.font = this.size.toString() + "px Impact, Charcoal, sans-serif";
+		ctx.fillStyle = "rgba(" + this.c.toString() + ", 0," +  " 0, " + alpha.toString() + ")";
+		ctx.textAlign = "center";
+		ctx.fillText("Test" , this.x , this.y);
+	}
+}
 
 
 var player = new Creature();
 
 ballArr = [];
-for (var i = 0; i < 2; i++) {
-	ballArr[i] = new Creature("monster", "red", "white");
-	ballArr[i].x = ballArr[i].fx;
-	ballArr[i].y = ballArr[i].fy;
+for (var i = 0; i < 10; i++) {
+	ballArr[i] = new Word(0,0, 255 , 0.1);
+	var XoY = circleCoords(80);
+	ballArr[i].fx = ballArr[i].x = XoY[0];
+	ballArr[i].y = ballArr[i].fy = XoY [1];
 }
 
 // Start Button object
@@ -243,6 +266,17 @@ startBtn = {
 	}
 };
 
+function Goal (x , y){
+	this.x = x;
+	this.y = y;
+	this.draw = function(){
+		ctx.shadowBlur = 0;
+		ctx.beginPath();
+		ctx.fillStyle = "red";
+		ctx.fillRect(this.x, this.y, scale / 2 , scale / 2);
+	}
+}
+
 
 // Function for (re)start
 function start() {
@@ -255,28 +289,31 @@ function start() {
 function isClear(where) {
 	if (where === 'up') {
 		for (var i = 0; i < maze.length; i++) {
-			if ((  (H/2 - 5 * scale/12 - maze[i].y ) <= speed * 1.5)   && (maze[i].y < H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
+			if ((  (H/2 - 5 * scale/12 - maze[i].y ) <= speed * 1.5) && (maze[i].y < H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'down') {
 		for (var i = 0; i < maze.length; i++) {
-			if ((  (maze[i].y + 0.2 * scale - H/2 - scale/2) <= speed * 1.5)   && (maze[i].y > H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
+			if ((  (maze[i].y - 0.3* scale - H/2 ) <= speed * 1.5) && (maze[i].y > H/2) && (maze[i].x <= W / 2) && (maze[i].x + maze[i].w >= W / 2)) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'left') {
 		for (var i = 0; i < maze.length; i++) {
-			if (((W/2 - scale * 0.2 - maze[i].x) <= speed * 1.5 ) && (maze[i].x < W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
+			if (((W/2 - scale * 0.2 - maze[i].x - maze[i].w) <= speed * 1.5 ) && (maze[i].x < W/2) && (maze[i].y + maze[i].h) >= (H / 2 -  scale/4 ) && maze[i].y <= (H / 2 +  0.20 * scale )) {
 				return 0;
 			}
 		}
 	}
 	else if (where === 'right') {
 		for (var i = 0; i < maze.length; i++) {
-			if (((maze[i].x - W/2 - scale/10)  <= speed * 1.5 ) && (maze[i].x > W/2) && maze[i].y <= H / 2 && maze[i].y + maze[i].h >= H / 2) {
+			/*console.log("start r");
+			console.log((maze[i].x - W/2 - scale/10)  <= speed * 1.5 );
+			console.log((maze[i].x > W/2)); */
+			if (((maze[i].x - W/2 - scale/10)  <= speed * 1.5 ) && (maze[i].x > W/2) && (maze[i].y + maze[i].h) >= (H / 2 -  scale/4 ) && maze[i].y <= (H / 2 +  0.20 * scale )) {
 				return 0;
 			}
 		}
@@ -376,6 +413,9 @@ function draw() {
 	for (var i = 0; i < maze.length; i++) {
 		maze[i].draw();
 	}
+	for (var i = 0; i < ballArr.length; i++) {
+		ballArr[i].draw();
+	}
 
 }
 
@@ -389,6 +429,8 @@ function animloop() {
 	draw();
 }
 
+var goal = new Goal (100 , 100);
+
 function startScreen() {
 	mazeGenerator(50, 50);
 	for(i = 0 ; i < matrix.length ; i++){
@@ -401,6 +443,7 @@ function startScreen() {
 		}
 	}
 	draw();
+	goal.draw();
 	startBtn.draw();
 }
 
@@ -415,7 +458,8 @@ function btnClick(e) {
 	// Click start button
 	if (mx >= startBtn.x && mx <= startBtn.x + startBtn.w && my >= startBtn.y && my <= startBtn.y + startBtn.h) {
 		animloop();
-
+		//TODO
+		setTimeout(function(){ console.log("hello"); }, 1000);
 		// Delete the start button after clicking it
 		startBtn = {};
 	}
