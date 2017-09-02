@@ -13,6 +13,9 @@ var canvas = document.querySelector('#game'),
 	speed = 350 / FPS,
 	init,
 	mouse = {},
+	particles = [],
+	maxWords = 10,
+	maxParticles = 10,
 	startBtn = {}, up, down, left, right,
 	restartBtn = {};
 
@@ -21,6 +24,10 @@ ctx.mozImageSmoothingEnabled = false;
 ctx.webkitImageSmoothingEnabled = false;
 ctx.msImageSmoothingEnabled = false;
 ctx.imageSmoothingEnabled = false;
+
+function magicFunc(x){ //I obtained it using linear regression, used it for getting the number of words to be displayed
+	return -0.01127*x + 55.38;
+}
 
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -31,8 +38,8 @@ function isInArray(value, array) {
 }
 
 function circleCoords(x){
-	var random = getRandomInt(0 , 2 * Math.PI);
-	return [x * 3 * Math.cos(random) + W/2 + getRandomInt(-100 , 10) , x * 4 *  Math.sin(random) + H/2 + getRandomInt(-100 , 10) ];
+	var random = getRandomInt(0 , 2 * Math.PI * 100) / 100;
+	return [x * 3 * Math.cos(random) + W/2 + getRandomInt(- 20 , 20) , x * 3 *  Math.sin(random) + H/2 + getRandomInt(-20 , 20) ];
 }
 
 function shuffle(array) {
@@ -217,30 +224,52 @@ function Wall(x, y, w, h) {
 };
 
 //0 <= c <= 255 , 0 <= alpha <= 1
-function Word(x , y, c , alpha){
+function Word(x , y, c , alpha , word){
 	this.x = x;
 	this.y = y;
 	this.c = c;
+	this.w = word;
 	this.alpha = alpha;
 	this.size = getRandomInt(15 , 30);
 	this.draw = function(){
 		ctx.beginPath();
+		ctx.shadowBlur = 0;
 		ctx.font = this.size.toString() + "px Impact, Charcoal, sans-serif";
-		ctx.fillStyle = "rgba(" + this.c.toString() + ", 0," +  " 0, " + alpha.toString() + ")";
+		ctx.fillStyle = "rgba(" + this.c.toString() +", " + (255 - this.c) + ", 0,"  + this.alpha.toString() + ")";
 		ctx.textAlign = "center";
-		ctx.fillText("Test" , this.x , this.y);
+		ctx.fillText(word , this.x , this.y);
 	}
 }
 
 
 var player = new Creature();
 
-ballArr = [];
-for (var i = 0; i < 10; i++) {
-	ballArr[i] = new Word(0,0, 255 , 0.1);
+wordArr = [];
+for (var i = 0; i < maxWords; i++) {
+
+	wordArr[i] = new Word(0,0, 255 , 1 , dict[2 * getRandomInt(0, dict.length/2 - 1)]);
 	var XoY = circleCoords(80);
-	ballArr[i].fx = ballArr[i].x = XoY[0];
-	ballArr[i].y = ballArr[i].fy = XoY [1];
+	wordArr[i].x = XoY[0];
+	wordArr[i].y = XoY[1];
+}
+
+function updateWords(){
+	var count = maxWords - wordArr.length;
+	//TODO
+	for(var i = 0 ; i < wordArr.length; i++){
+		if(wordArr[i]){
+			wordArr[i].alpha -= 1/FPS/2 //damn math;
+			if(wordArr[i].alpha <= 0.1){
+				wordArr.splice(i,1);
+				//count++
+			}
+		}
+	}
+	for(var i = 0 ; i < count ; i++){
+		var XoY = circleCoords(80);
+		wordArr.push(new Word(XoY[0] ,XoY[1] , 255 , 1 , dict[2 * getRandomInt(0, dict.length/2 - 1) + 1]));
+	}
+
 }
 
 // Start Button object
@@ -268,7 +297,9 @@ startBtn = {
 
 function Goal (x , y){
 	this.x = x;
+	this.fx = x;
 	this.y = y;
+	this.fy = y;
 	this.draw = function(){
 		ctx.shadowBlur = 0;
 		ctx.beginPath();
@@ -276,7 +307,6 @@ function Goal (x , y){
 		ctx.fillRect(this.x, this.y, scale / 2 , scale / 2);
 	}
 }
-
 
 // Function for (re)start
 function start() {
@@ -382,27 +412,16 @@ var maxD = Infinity;
 
 // A blind man walks into a bar... and a table and a chair
 function update() {
-	/*for(var i = 0 ; i < ballArr.length ; i++){
-		var maxD = Infinity;
-		ballArr[i].x = ballArr[i].fx -  CL;
-		ballArr[i].y = ballArr[i].fy - CT;
-		if(maxD > (ballArr[i].x - W/2) * (ballArr[i].x - W/2) + (ballArr[i].y - H/2) * (ballArr[i].y - H/2)){
-			maxD = (ballArr[i].x - W/2) * (ballArr[i].x - W/2) + (ballArr[i].y - H/2) * (ballArr[i].y - H/2);
-			maxD += 1;
-			if(maxD > 300000){
-				player.sc = "white";
-			}
-			else {
-				var yes = (Math.floor(maxD/1176)).toString(16);//magic number
-				player.sc = ("#FF" + yes + yes); 
-			}
-		}
-	}
-	*/
+	var a = goal.x - W/2;
+	var b = goal.y - H/2
+	maxWords = Math.max(1 , Math.min(50 , Math.floor( magicFunc(Math.sqrt(a * a + b * b))  )))
 	for (var i = 0; i < maze.length; i++) {
 		maze[i].x = maze[i].fx - CL;
 		maze[i].y = maze[i].fy - CT;
 	}
+	goal.x = goal.fx - CL;
+	goal.y = goal.fy - CT;
+	updateWords();
 }
 
 // Draw everything on canvas
@@ -410,11 +429,12 @@ function draw() {
 	start();
 	update();
 	player.draw();
+	goal.draw();
 	for (var i = 0; i < maze.length; i++) {
 		maze[i].draw();
 	}
-	for (var i = 0; i < ballArr.length; i++) {
-		ballArr[i].draw();
+	for (var i = 0; i < wordArr.length; i++) {
+		wordArr[i].draw();
 	}
 
 }
