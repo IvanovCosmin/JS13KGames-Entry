@@ -17,7 +17,15 @@ var canvas = document.querySelector('#game'),
 	maxWords = 10,
 	maxParticles = 10,
 	startBtn = {}, up, down, left, right,
-	restartBtn = {};
+	restartBtn = {},
+	mainPlay = 0,
+	wordIndex = 0,
+	wordPlay = new Word(400 , 200 , 0 , 1 , dict[1] , 40 ),
+	wordTyped = new Word(400 , 250 , 255 , 1 , '' , 40),
+	timeout = 0,
+	life = 3,
+	currentTime,
+	lastTime = 0;
 
 
 ctx.mozImageSmoothingEnabled = false;
@@ -224,20 +232,20 @@ function Wall(x, y, w, h) {
 };
 
 //0 <= c <= 255 , 0 <= alpha <= 1
-function Word(x , y, c , alpha , word){
+function Word(x , y , alpha , c , word , size){
 	this.x = x;
 	this.y = y;
 	this.c = c;
 	this.w = word;
 	this.alpha = alpha;
-	this.size = getRandomInt(15 , 30);
+	this.size = size || getRandomInt(15 , 30);
 	this.draw = function(){
 		ctx.beginPath();
 		ctx.shadowBlur = 0;
 		ctx.font = this.size.toString() + "px Impact, Charcoal, sans-serif";
 		ctx.fillStyle = "rgba(" + this.c.toString() +", " + (255 - this.c) + ", 0,"  + this.alpha.toString() + ")";
 		ctx.textAlign = "center";
-		ctx.fillText(word , this.x , this.y);
+		ctx.fillText(this.w , this.x , this.y);
 	}
 }
 
@@ -333,7 +341,7 @@ function isClear(where) {
 	}
 	else if (where === 'left') {
 		for (var i = 0; i < maze.length; i++) {
-			if (((W/2 - scale * 0.2 - maze[i].x - maze[i].w) <= speed * 1.5 ) && (maze[i].x < W/2) && (maze[i].y + maze[i].h) >= (H / 2 -  scale/4 ) && maze[i].y <= (H / 2 +  0.20 * scale )) {
+			if (((W/2 - scale * 0.1 - maze[i].x - maze[i].w) <= speed * 1.5 ) && (maze[i].x < W/2) && (maze[i].y + maze[i].h) >= (H / 2 -  scale/4 ) && maze[i].y <= (H / 2 +  0.20 * scale )) {
 				return 0;
 			}
 		}
@@ -353,89 +361,146 @@ function isClear(where) {
 }
 
 function fixedUpdate(e) {
-	var code = e.keyCode;
-	if (code == 87 && !up) {
-		up = setInterval(function () {
-			CT -= speed * isClear('up');
-		}, 1000 / FPS);
-		clearInterval(down);
-		down = 0;
-		player.r = 1;
+	if(mainPlay){
+		var code = e.keyCode;
+		if (code == 87 && !up) {
+			up = setInterval(function () {
+				CT -= speed * isClear('up');
+			}, 1000 / FPS);
+			clearInterval(down);
+			down = 0;
+			player.r = 1;
+		}
+		else if (code == 83 && !down) {
+			down = setInterval(function () {
+				CT += speed * isClear('down');
+			}, 1000 / FPS);
+			clearInterval(up);
+			up = 0;
+			player.r = 0;
+		}
+		else if (code == 65 && !left) {
+			left = setInterval(function () {
+				CL -= speed * isClear('left');
+			}, 1000 / FPS);
+			clearInterval(right);
+			right = 0;
+			player.r = 2;
+		}
+		else if (code == 68 && !right) {
+			right = setInterval(function () {
+				CL += speed * isClear('right');
+			}, 1000 / FPS);
+			clearInterval(left);
+			left = 0;
+			player.r = 3;
+		}
 	}
-	else if (code == 83 && !down) {
-		down = setInterval(function () {
-			CT += speed * isClear('down');
-		}, 1000 / FPS);
-		clearInterval(up);
-		up = 0;
-		player.r = 0;
-	}
-	else if (code == 65 && !left) {
-		left = setInterval(function () {
-			CL -= speed * isClear('left');
-		}, 1000 / FPS);
-		clearInterval(right);
-		right = 0;
-		player.r = 2;
-	}
-	else if (code == 68 && !right) {
-		right = setInterval(function () {
-			CL += speed * isClear('right');
-		}, 1000 / FPS);
-		clearInterval(left);
-		left = 0;
-		player.r = 3;
+	else {
+		var code = e.charCode || e.keyCode || e.which;
+		console.log(code);
+		if((code === 8 || code === 46) && wordTyped.w.length > 0){
+		wordTyped.w = wordTyped.w.slice(0, -1);
+		}
+		else if(code === 13){
+			wordTyped.w = '';
+			if(wordTyped.w === wordPlay.w){
+				dict[2 * wordIndex] = "out";
+				wordPlay.w = dict[2 * ++wordIndex + 1];
+				lastTime = currentTime;
+			}
+			else {
+				wordPlay.w = dict[2 * wordIndex];
+				lastTime = currentTime - 2000;
+			}
+		}
+		else{
+			var keychar = String.fromCharCode(code);
+			var char = keychar.toLowerCase();
+			if(char.length === 1 && char.match(/[a-z]/i)){
+				wordTyped.w += char;
+			}
+		}
+
 	}
 }
 
 function stopmoving(e) {
-	var code = e.keyCode;
-	if (code == 87 && up) {
-		clearInterval(up);
-		up = 0;
+	if(mainPlay){
+		var code = e.keyCode;
+		if (code == 87 && up) {
+			clearInterval(up);
+			up = 0;
+		}
+		else if (code == 83 && down) {
+			clearInterval(down);
+			down = 0;
+		}
+		else if (code == 65 && left) {
+			clearInterval(left);
+			left = 0;
+		}
+		else if (code == 68 && right) {
+			clearInterval(right);
+			right = 0;
+		}
 	}
-	else if (code == 83 && down) {
-		clearInterval(down);
-		down = 0;
-	}
-	else if (code == 65 && left) {
-		clearInterval(left);
-		left = 0;
-	}
-	else if (code == 68 && right) {
-		clearInterval(right);
-		right = 0;
+	else {
+
 	}
 }
 
 var maxD = Infinity;
 
+
+
 // A blind man walks into a bar... and a table and a chair
 function update() {
-	var a = goal.x - W/2;
-	var b = goal.y - H/2
-	maxWords = Math.max(1 , Math.min(50 , Math.floor( magicFunc(Math.sqrt(a * a + b * b))  )))
-	for (var i = 0; i < maze.length; i++) {
-		maze[i].x = maze[i].fx - CL;
-		maze[i].y = maze[i].fy - CT;
+	if(mainPlay){
+		var a = goal.x - W/2;
+		var b = goal.y - H/2
+		maxWords = Math.max(1 , Math.min(50 , Math.floor( magicFunc(Math.sqrt(a * a + b * b))  )));
+		for (var i = 0; i < maze.length; i++) {
+			maze[i].x = maze[i].fx - CL;
+			maze[i].y = maze[i].fy - CT;
+		}
+		goal.x = goal.fx - CL;
+		goal.y = goal.fy - CT;
+		updateWords();
 	}
-	goal.x = goal.fx - CL;
-	goal.y = goal.fy - CT;
-	updateWords();
+	else {
+		if(!lastTime) {
+        	lastTime = currentTime;
+    	}
+		if(currentTime - lastTime >= 3 * 1000){
+			lastTime = currentTime;
+			mainPlay = 1;
+		}
+	}
 }
 
 // Draw everything on canvas
 function draw() {
 	start();
 	update();
-	player.draw();
-	goal.draw();
-	for (var i = 0; i < maze.length; i++) {
-		maze[i].draw();
+	if(mainPlay){
+		player.draw();
+		goal.draw();
+		for (var i = 0; i < maze.length; i++) {
+			maze[i].draw();
+		}
+		for (var i = 0; i < wordArr.length; i++) {
+			wordArr[i].draw();
+		}
 	}
-	for (var i = 0; i < wordArr.length; i++) {
-		wordArr[i].draw();
+	else {
+		ctx.shadowBlur = 0;
+		ctx.beginPath();
+		wordPlay.draw();
+		wordTyped.draw();
+		
 	}
+
 
 }
 
@@ -444,8 +509,9 @@ function gameOver() {
 	cancelRequestAnimFrame(init);
 }
 
-function animloop() {
+function animloop(now) {
 	init = requestAnimFrame(animloop);
+	currentTime = now;
 	draw();
 }
 
@@ -463,7 +529,6 @@ function startScreen() {
 		}
 	}
 	draw();
-	goal.draw();
 	startBtn.draw();
 }
 
