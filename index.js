@@ -20,8 +20,8 @@ var canvas = document.querySelector('#game'),
 	restartBtn = {},
 	mainPlay = 0,
 	wordIndex = 0,
-	wordPlay = new Word(400 , 200 , 0 , 1 , dict[1] , 40 ),
-	wordTyped = new Word(400 , 250 , 255 , 1 , '' , 40),
+	wordPlay = new Word(400 , 200 , [255, 255 , 255] , 1 , [dict[1], 1] , 40 ),
+	wordTyped = new Word(400 , 250 , [0 , 255 , 0] , 1 , ['',1] , 40),
 	timeout = 0,
 	life = 3,
 	currentTime,
@@ -231,21 +231,31 @@ function Wall(x, y, w, h) {
 
 };
 
-//0 <= c <= 255 , 0 <= alpha <= 1
+//c = [R , G , B] , 0 <= alpha <= 1
 function Word(x , y , c , alpha , word , size){
 	this.x = x;
 	this.y = y;
-	this.c = c;
 	this.w = word;
+	if(c.length){
+		this.c = c;
+	}
+	else {
+		if(dict[word[1]] === dict[word[1] + 1]){
+			this.c = [0 , 255 , 0];
+		}
+		else {
+			this.c = [255 , 0 , 0];
+		}
+	}			
 	this.alpha = alpha;
 	this.size = size || getRandomInt(15 , 30);
 	this.draw = function(){
 		ctx.beginPath();
 		ctx.shadowBlur = 0;
 		ctx.font = this.size.toString() + "px Impact, Charcoal, sans-serif";
-		ctx.fillStyle = "rgba(" + this.c.toString() +", " + (255 - this.c) + ", 0,"  + this.alpha.toString() + ")";
 		ctx.textAlign = "center";
-		ctx.fillText(this.w , this.x , this.y);
+		ctx.fillStyle = "rgba(" + this.c[0] +", " + this.c[1] + ", "+ this.c[2] + ","  + this.alpha + ")";
+		ctx.fillText(this.w[0] , this.x , this.y);
 	}
 }
 
@@ -254,8 +264,7 @@ var player = new Creature();
 
 wordArr = [];
 for (var i = 0; i < maxWords; i++) {
-
-	wordArr[i] = new Word(0,0, 255 , 1 , dict[2 * getRandomInt(0, dict.length/2 - 1)]);
+	wordArr[i] = new Word(0,0, [] , 1 , [dict[2 * getRandomInt(0, dict.length/2 - 1)] , 2 * getRandomInt(0, dict.length/2 - 1)]);
 	var XoY = circleCoords(80);
 	wordArr[i].x = XoY[0];
 	wordArr[i].y = XoY[1];
@@ -275,7 +284,7 @@ function updateWords(){
 	}
 	for(var i = 0 ; i < count ; i++){
 		var XoY = circleCoords(80);
-		wordArr.push(new Word(XoY[0] ,XoY[1] , 255 , 1 , dict[2 * getRandomInt(0, dict.length/2 - 1) + 1]));
+		wordArr.push(new Word(XoY[0] ,XoY[1] , [] , 1 , [dict[2 * getRandomInt(0, dict.length/2 - 1)] , 2 * getRandomInt(0, dict.length/2 - 1)]));
 	}
 
 }
@@ -398,27 +407,26 @@ function fixedUpdate(e) {
 	}
 	else {
 		var code = e.charCode || e.keyCode || e.which;
-		console.log(code);
-		if((code === 8 || code === 46) && wordTyped.w.length > 0){
-		wordTyped.w = wordTyped.w.slice(0, -1);
+		if((code === 8 || code === 46) && wordTyped.w[0].length > 0){
+		wordTyped.w[0] = wordTyped.w[0].slice(0, -1);
 		}
 		else if(code === 13){
-			if(wordTyped.w === wordPlay.w){
-				dict[2 * wordIndex] = "out";
-				wordPlay.w = dict[2 * ++wordIndex + 1];
+			if(wordTyped.w[0] === wordPlay.w[0]){
+				dict[2 * wordIndex] = dict[2 * wordIndex + 1];
+				wordPlay.w = [dict[2 * ++wordIndex + 1] , 2 * wordIndex + 1];
 				lastTime = currentTime;
 			}
 			else {
-				wordPlay.w = dict[2 * wordIndex];
+				wordPlay.w = [dict[2 * ++wordIndex + 1] , 2 * wordIndex + 1];
 				lastTime = currentTime - 2000;
 			}
-			wordTyped.w = '';
+			wordTyped.w = ['',1];
 		}
 		else{
 			var keychar = String.fromCharCode(code);
 			var char = keychar.toLowerCase();
 			if(char.length === 1 && char.match(/[a-z]/i)){
-				wordTyped.w += char;
+				wordTyped.w[0] += char;
 			}
 		}
 
@@ -475,6 +483,13 @@ function update() {
 		if(currentTime - lastTime >= 3 * 1000){
 			lastTime = currentTime;
 			mainPlay = 1;
+			wordArr = [];
+			for (var i = 0; i < maxWords; i++) {
+				wordArr[i] = new Word(0,0, [] , 1 , [dict[2 * getRandomInt(0, dict.length/2 - 1)] , 2 * getRandomInt(0, dict.length/2 - 1)]);
+				var XoY = circleCoords(80);
+				wordArr[i].x = XoY[0];
+				wordArr[i].y = XoY[1];
+			}
 		}
 	}
 }
