@@ -232,7 +232,7 @@ function Wall(x, y, w, h) {
 };
 
 //0 <= c <= 255 , 0 <= alpha <= 1
-function Word(x , y , alpha , c , word , size){
+function Word(x , y , c , alpha , word , size){
 	this.x = x;
 	this.y = y;
 	this.c = c;
@@ -403,7 +403,6 @@ function fixedUpdate(e) {
 		wordTyped.w = wordTyped.w.slice(0, -1);
 		}
 		else if(code === 13){
-			wordTyped.w = '';
 			if(wordTyped.w === wordPlay.w){
 				dict[2 * wordIndex] = "out";
 				wordPlay.w = dict[2 * ++wordIndex + 1];
@@ -413,6 +412,7 @@ function fixedUpdate(e) {
 				wordPlay.w = dict[2 * wordIndex];
 				lastTime = currentTime - 2000;
 			}
+			wordTyped.w = '';
 		}
 		else{
 			var keychar = String.fromCharCode(code);
