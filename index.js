@@ -1,7 +1,8 @@
 var FPS = 60;
 var imgURL = ['img/fata.png', 'img/mersulpinguinilor.png', 'img/spate.png', 'img/reversed-min.png'];
 var images = [];
-var dict = ['fear', 'happiness', 'shame', 'remorseless', 'anguish', 'delight', 'sadness', 'cheer', 'heartache', 'contentment', 'suffering', 'comfort', 'collapse', 'wonder'];
+var dict = ['fear', 'happiness', 'shame', 'remorseless', 'anguish', 'delight', 'sadness', 'cheer', 'heartache', 'contentment', 'suffering', 'comfort', 'collapse', 'wonder' , 'suicide'];
+var badWords = ['die' , 'just die already' , 'no one loves you'];
 var imgNr = imgURL.length;
 // Initialize some stuff
 var canvas = document.querySelector('#game'),
@@ -29,7 +30,10 @@ var canvas = document.querySelector('#game'),
 	currentTime,
 	lastTime = 0,
 	goalIndex = 0
-	howMany = 0;
+	howMany = 0,
+	ok = 1
+	badIndex = 0
+	die = 1;
 
 
 ctx.mozImageSmoothingEnabled = false;
@@ -423,26 +427,61 @@ function fixedUpdate(e) {
 			wordTyped.w[0] = wordTyped.w[0].slice(0, -1);
 		}
 		else if (code === 13) {
-			if (wordTyped.w[0] === wordPlay.w[0]) {
-				lastTime = currentTime;
-				goals[goalIndex].yee = dict[goalIndex * 2 + 1];
-				goals[goalIndex].c = "#00FF00";
-				text.w[0] = dict[i * 2 + 1];
-				score++;
-				mainPlay = 1;
+			if(score != -1){
+				if (wordTyped.w[0] === wordPlay.w[0]) {
+					goals[goalIndex].yee = dict[goalIndex * 2 + 1];
+					goals[goalIndex].c = "#00FF00";
+					text.w[0] = dict[i * 2 + 1];
+					score++;
+					if(score === 7){
+						goals = [];
+						maze = [];
+						CL = 0;
+						CT = 0;
+						score = -1;
+						ok = 0;
+						goals[0] = new Goal( W/2 , H/2 - scale );
+					}
+					mainPlay = 1;
+				}
+				else {
+					lastTime = currentTime;
+					goals[goalIndex].fx = getRandomInt(1, 24 * scale) - scale / 4;
+				}
+				wordTyped.w = ['', 1];
 			}
 			else {
-				mainPlay = 1;
-				goals[goalIndex].fx = getRandomInt(1, 24 * scale) - scale / 4;
+				if(badIndex === 3){
+					goals = [];
+					alert("Well you actually did it ! And you may be asking yourself what does this all mean?");
+					mainPlay = 1;
+				}
+				else {
+					wordTyped.w[0] = badWords [badIndex];
+					badIndex++;
+					console.log(badIndex);
+					wordTyped.c = [255 , 0 , 0];
+				}
 			}
-			wordTyped.w = ['', 1];
 		}
 		else {
-			var keychar = String.fromCharCode(code);
-			var char = keychar.toLowerCase();
-			if (char.length === 1 && char.match(/[a-z]/i)) {
-				wordTyped.w[0] += char;
-			}
+				var keychar = String.fromCharCode(code);
+				var char = keychar.toLowerCase();
+				if (char.length === 1 && char.match(/[a-z]/i)) {
+					if(badIndex === 3){
+						wordTyped.w[0] = 'suicide'.substring(0,die);
+						die++;
+						if(die === 'suicide'.length + 4){
+							goals = [];
+							mainPlay = 1;
+							alert("Well you actually did it ! And you may be asking yourself what does this all mean?");
+					
+						}
+					}
+					else {
+						wordTyped.w[0] += char;
+					}
+				}
 		}
 
 	}
@@ -501,7 +540,7 @@ function update() {
 					}
 					else {
 						mainPlay = 0;
-						wordPlay.w[0] = dict[i * 2 + 1]; 
+						wordPlay.w[0] = score === -1 ? 'live' : dict[i * 2 + 1]; 
 						clearInterval(up);
 						up = 0;
 						clearInterval(left);
@@ -526,20 +565,6 @@ function update() {
 		pushWord(dict[2 * target.i]);
 	}
 	else {
-		if (!lastTime) {
-			lastTime = currentTime;
-		}
-		if (currentTime - lastTime >= 3 * 1000) {
-			lastTime = currentTime;
-			mainPlay = 1;
-			/*wordArr = [];
-			for (var i = 0; i < maxWords; i++) {
-				wordArr[i] = new Word(0,0, [] , 1 , [dict[2 * getRandomInt(0, dict.length/2 - 1)] , 2 * getRandomInt(0, dict.length/2 - 1)]);
-				var XoY = circleCoords(80);
-				wordArr[i].x = XoY[0];
-				wordArr[i].y = XoY[1];
-			}*/
-		}
 	}
 }
 
@@ -562,8 +587,13 @@ function draw() {
 		ctx.shadowBlur = 0 ;
 		ctx.font = "40px Impact, Charcoal, sans-serif";
 		ctx.textAlign = "center";
-		ctx.fillStyle = "#00FF00";
-		ctx.fillText(score + "/" + dict.length/2 , 50 , 75);
+		if(ok){
+			ctx.fillStyle = "#00FF00";
+		}
+		else{
+			ctx.fillStyle = "#FF0000";
+		}
+		ctx.fillText(score + "/" + (dict.length - 1)/2 , 50 , 75);
 	}
 	else {
 		ctx.shadowBlur = 0;
@@ -615,7 +645,6 @@ function btnClick(e) {
 	if (mx >= startBtn.x && mx <= startBtn.x + startBtn.w && my >= startBtn.y && my <= startBtn.y + startBtn.h) {
 		animloop();
 		//TODO
-		setTimeout(function () { console.log("hello"); }, 1000);
 		// Delete the start button after clicking it
 		startBtn = {};
 	}

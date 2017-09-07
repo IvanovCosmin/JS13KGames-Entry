@@ -3,3 +3,6 @@ body {
     padding: 0px;
     overflow: hidden;
 }
+p,h1 {
+    color: white;
+}
